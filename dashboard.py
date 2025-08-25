@@ -439,14 +439,9 @@ def main():
                             label_visibility="collapsed"
                         )
                         
-                        st.sidebar.markdown("🥧 **Pie Charts**")  
-                        pie_layout = st.sidebar.select_slider(
-                            "Layout",
-                            options=["↔️ Side-by-side", "⬇️ Vertical"],
-                            value="↔️ Side-by-side",
-                            key="pie_layout_slider",
-                            label_visibility="collapsed"
-                        )
+                        st.sidebar.markdown("📊 **Distribution Chart**")  
+                        st.sidebar.markdown("*Uses optimized stacked bar chart*")
+                        pie_layout = "⬇️ Vertical"  # Fixed layout for stacked bar chart
                         
                         st.sidebar.markdown("🔥 **Heatmaps**")
                         heatmap_layout = st.sidebar.select_slider(
@@ -631,34 +626,31 @@ def display_dashboard(analyzer, sheet_name, options):
                 for insight in insights:
                     st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
     
-    # Create columns for layout
-    col1, col2 = st.columns(2)
+    # Vertical layout for all charts
     
     # Monthly trends chart
     if options['trends']:
-        with col1:
-            st.subheader("Monthly Membership Trends")
-            try:
-                fig_trends = analyzer.create_monthly_trend_chart(sheet_name)
-                if fig_trends:
-                    st.plotly_chart(fig_trends, use_container_width=True)
-                else:
-                    st.warning("Could not generate monthly trends chart")
-            except Exception as e:
-                st.error(f"Error creating trends chart: {str(e)}")
+        st.subheader("Monthly Membership Trends")
+        try:
+            fig_trends = analyzer.create_monthly_trend_chart(sheet_name)
+            if fig_trends:
+                st.plotly_chart(fig_trends, use_container_width=True)
+            else:
+                st.warning("Could not generate monthly trends chart")
+        except Exception as e:
+            st.error(f"Error creating trends chart: {str(e)}")
     
     # Pie chart
     if options['pie']:
-        with col2:
-            st.subheader("Membership Type Distribution")
-            try:
-                fig_pie = analyzer.create_membership_type_pie_chart(sheet_name)
-                if fig_pie:
-                    st.plotly_chart(fig_pie, use_container_width=True)
-                else:
-                    st.warning("Could not generate pie chart")
-            except Exception as e:
-                st.error(f"Error creating pie chart: {str(e)}")
+        st.subheader("Membership Type Distribution")
+        try:
+            fig_pie = analyzer.create_membership_type_pie_chart(sheet_name)
+            if fig_pie:
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.warning("Could not generate pie chart")
+        except Exception as e:
+            st.error(f"Error creating pie chart: {str(e)}")
     
     # Heatmap (full width)
     if options['heatmap']:
@@ -918,36 +910,12 @@ def display_two_location_comparison(analyzer, location_1, location_2, options, l
     if options['pie']:
         st.subheader("Membership Distribution Comparison")
         
-        if layout_options['pie_layout'] == 'Side-by-side':
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown(f"**{location_1}**")
-                fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
-                if fig_pie_1:
-                    # Move legend to bottom for better space usage
-                    fig_pie_1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
-                    st.plotly_chart(fig_pie_1, use_container_width=True)
-            
-            with col2:
-                st.markdown(f"**{location_2}**")
-                fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
-                if fig_pie_2:
-                    # Move legend to bottom for better space usage
-                    fig_pie_2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
-                    st.plotly_chart(fig_pie_2, use_container_width=True)
-        else:  # Vertical stack
-            with st.container():
-                st.markdown(f"**{location_1}**")
-                fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
-                if fig_pie_1:
-                    st.plotly_chart(fig_pie_1, use_container_width=True)
-            
-            with st.container():
-                st.markdown(f"**{location_2}**")
-                fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
-                if fig_pie_2:
-                    st.plotly_chart(fig_pie_2, use_container_width=True)
+        # Use stacked bar chart instead of problematic pie charts
+        fig_distribution = analyzer.create_two_location_distribution_comparison(location_1, location_2)
+        if fig_distribution:
+            st.plotly_chart(fig_distribution, use_container_width=True)
+        else:
+            st.warning("Could not generate membership distribution comparison")
     
     if options['heatmap']:
         st.subheader("Activity Heatmaps Comparison")
