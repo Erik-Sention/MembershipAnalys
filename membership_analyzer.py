@@ -239,7 +239,8 @@ class MembershipAnalyzer:
                     hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
                 )
                 fig.update_layout(
-                    height=550,  # Slightly taller to accommodate bottom legend
+                    height=500,  # Standard height
+                    width=600,   # Max width to prevent fullscreen distortion
                     showlegend=True,
                     margin=dict(t=80, b=80, l=20, r=20)  # More bottom margin for legend
                 )
