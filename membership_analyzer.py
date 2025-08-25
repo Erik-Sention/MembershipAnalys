@@ -238,7 +238,12 @@ class MembershipAnalyzer:
                     textinfo='percent+label',
                     hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
                 )
-                fig.update_layout(height=600, showlegend=True)
+                fig.update_layout(
+                    height=500,  # Consistent height for all pie charts
+                    width=500,   # Consistent width for all pie charts
+                    showlegend=True,
+                    margin=dict(t=80, b=20, l=20, r=20)  # Better margins
+                )
                 
                 return fig
         
@@ -393,8 +398,10 @@ class MembershipAnalyzer:
                     xaxis_title='Membership Type',
                     yaxis_title='Total Count',
                     xaxis={'tickangle': 45},
-                    height=600,
-                    showlegend=False
+                    height=700,  # Increased height for better text visibility
+                    showlegend=False,
+                    margin=dict(t=100, b=150, l=80, r=80),  # Better margins for text
+                    yaxis=dict(range=[0, max(top_performers['Total']) * 1.2])  # Extra space for text above bars
                 )
                 
                 return fig
@@ -629,7 +636,9 @@ class MembershipAnalyzer:
             xaxis_title='Location & Year',
             yaxis_title='Total Memberships',
             xaxis={'tickangle': 45},
-            height=500
+            height=600,
+            margin=dict(t=100, b=100, l=80, r=80),  # Better margins for text
+            yaxis=dict(range=[0, comparison_df['Total_Memberships'].max() * 1.2])  # Extra space for text above bars
         )
         
         # 2. Monthly performance comparison
@@ -685,7 +694,10 @@ class MembershipAnalyzer:
             xaxis_title='Location & Year',
             yaxis_title='Growth Rate (%)',
             xaxis={'tickangle': 45},
-            height=500
+            height=600,
+            margin=dict(t=100, b=100, l=80, r=80),  # Better margins for text
+            yaxis=dict(range=[min(comparison_df['Growth_Rate'].min() * 1.2, -20), 
+                             max(comparison_df['Growth_Rate'].max() * 1.2, 20)])  # Extra space for text
         )
         
         return fig_totals, fig_monthly, fig_growth
@@ -753,8 +765,9 @@ class MembershipAnalyzer:
             xaxis_title='Location & Year',
             yaxis_title='Number of Members',
             xaxis={'tickangle': 45},
-            height=600,
-            legend_title='Membership Types'
+            height=700,  # Increased height
+            legend_title='Membership Types',
+            margin=dict(t=100, b=100, l=80, r=80)  # Better margins
         )
         
         return fig
