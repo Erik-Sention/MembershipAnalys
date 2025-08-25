@@ -841,48 +841,55 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
     
     if options['pie']:
         st.subheader("Membership Distribution Comparison")
+        col1, col2 = st.columns(2)
         
-        # First location pie chart
-        st.markdown(f"#### {location_1}")
-        fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
-        if fig_pie_1:
-            st.plotly_chart(fig_pie_1, use_container_width=True)
+        with col1:
+            st.markdown(f"**{location_1}**")
+            fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
+            if fig_pie_1:
+                # Move legend to bottom for better space usage
+                fig_pie_1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
+                st.plotly_chart(fig_pie_1, use_container_width=True)
         
-        # Second location pie chart
-        st.markdown(f"#### {location_2}")
-        fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
-        if fig_pie_2:
-            st.plotly_chart(fig_pie_2, use_container_width=True)
+        with col2:
+            st.markdown(f"**{location_2}**")
+            fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
+            if fig_pie_2:
+                # Move legend to bottom for better space usage
+                fig_pie_2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
+                st.plotly_chart(fig_pie_2, use_container_width=True)
     
     if options['heatmap']:
         st.subheader("Activity Heatmaps Comparison")
         
-        # First location heatmap
-        st.markdown(f"#### {location_1}")
-        fig_heatmap_1 = analyzer.create_heatmap(location_1)
-        if fig_heatmap_1:
-            st.plotly_chart(fig_heatmap_1, use_container_width=True)
+        # Tighter spacing between heatmaps
+        with st.container():
+            st.markdown(f"**{location_1}**")
+            fig_heatmap_1 = analyzer.create_heatmap(location_1)
+            if fig_heatmap_1:
+                st.plotly_chart(fig_heatmap_1, use_container_width=True)
         
-        # Second location heatmap  
-        st.markdown(f"#### {location_2}")
-        fig_heatmap_2 = analyzer.create_heatmap(location_2)
-        if fig_heatmap_2:
-            st.plotly_chart(fig_heatmap_2, use_container_width=True)
+        with st.container():
+            st.markdown(f"**{location_2}**")
+            fig_heatmap_2 = analyzer.create_heatmap(location_2)
+            if fig_heatmap_2:
+                st.plotly_chart(fig_heatmap_2, use_container_width=True)
     
     if options['top_performers']:
         st.subheader("Top Performers Comparison")
         
-        # First location top performers
-        st.markdown(f"#### {location_1}")
-        fig_top_1 = analyzer.create_top_performers_chart(location_1)
-        if fig_top_1:
-            st.plotly_chart(fig_top_1, use_container_width=True)
+        # Tighter spacing between bar charts
+        with st.container():
+            st.markdown(f"**{location_1}**")
+            fig_top_1 = analyzer.create_top_performers_chart(location_1)
+            if fig_top_1:
+                st.plotly_chart(fig_top_1, use_container_width=True)
         
-        # Second location top performers
-        st.markdown(f"#### {location_2}")
-        fig_top_2 = analyzer.create_top_performers_chart(location_2)
-        if fig_top_2:
-            st.plotly_chart(fig_top_2, use_container_width=True)
+        with st.container():
+            st.markdown(f"**{location_2}**")
+            fig_top_2 = analyzer.create_top_performers_chart(location_2)
+            if fig_top_2:
+                st.plotly_chart(fig_top_2, use_container_width=True)
     
     if options['insights']:
         st.subheader("Detailed Insights Comparison")
