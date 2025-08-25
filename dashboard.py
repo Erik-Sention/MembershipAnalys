@@ -426,36 +426,44 @@ def main():
                         show_top_performers_comp = st.sidebar.checkbox("Top Performers Comparison", True)
                         show_insights_comp = st.sidebar.checkbox("Comparative Insights", True)
                         
-                        st.sidebar.subheader("Layout Controls")
-                        st.sidebar.markdown("*Choose how to display each chart type:*")
+                        st.sidebar.subheader("Layout Designer")
+                        st.sidebar.markdown("*Drag the icons to choose layout:*")
                         
-                        # Layout options for each chart type
-                        trends_layout = st.sidebar.radio(
-                            "Monthly Trends Layout",
-                            ["Side-by-side", "Vertical stack"],
-                            index=0,
-                            key="trends_layout"
+                        # Visual layout controls with emojis
+                        st.sidebar.markdown("📈 **Monthly Trends**")
+                        trends_layout = st.sidebar.select_slider(
+                            "Layout",
+                            options=["↔️ Side-by-side", "⬇️ Vertical"],
+                            value="↔️ Side-by-side",
+                            key="trends_layout_slider",
+                            label_visibility="collapsed"
                         )
                         
-                        pie_layout = st.sidebar.radio(
-                            "Pie Charts Layout", 
-                            ["Side-by-side", "Vertical stack"],
-                            index=0,
-                            key="pie_layout"
+                        st.sidebar.markdown("🥧 **Pie Charts**")  
+                        pie_layout = st.sidebar.select_slider(
+                            "Layout",
+                            options=["↔️ Side-by-side", "⬇️ Vertical"],
+                            value="↔️ Side-by-side",
+                            key="pie_layout_slider",
+                            label_visibility="collapsed"
                         )
                         
-                        heatmap_layout = st.sidebar.radio(
-                            "Heatmaps Layout",
-                            ["Side-by-side", "Vertical stack"], 
-                            index=1,
-                            key="heatmap_layout"
+                        st.sidebar.markdown("🔥 **Heatmaps**")
+                        heatmap_layout = st.sidebar.select_slider(
+                            "Layout", 
+                            options=["↔️ Side-by-side", "⬇️ Vertical"],
+                            value="⬇️ Vertical",
+                            key="heatmap_layout_slider",
+                            label_visibility="collapsed"
                         )
                         
-                        bars_layout = st.sidebar.radio(
-                            "Bar Charts Layout",
-                            ["Side-by-side", "Vertical stack"],
-                            index=1,
-                            key="bars_layout"
+                        st.sidebar.markdown("📊 **Bar Charts**")
+                        bars_layout = st.sidebar.select_slider(
+                            "Layout",
+                            options=["↔️ Side-by-side", "⬇️ Vertical"],
+                            value="⬇️ Vertical", 
+                            key="bars_layout_slider",
+                            label_visibility="collapsed"
                         )
                         
                         # Display two location comparison
@@ -467,10 +475,10 @@ def main():
                                 'top_performers': show_top_performers_comp,
                                 'insights': show_insights_comp
                             }, {
-                                'trends_layout': trends_layout,
-                                'pie_layout': pie_layout,
-                                'heatmap_layout': heatmap_layout,
-                                'bars_layout': bars_layout
+                                'trends_layout': 'Side-by-side' if '↔️' in trends_layout else 'Vertical stack',
+                                'pie_layout': 'Side-by-side' if '↔️' in pie_layout else 'Vertical stack',
+                                'heatmap_layout': 'Side-by-side' if '↔️' in heatmap_layout else 'Vertical stack',
+                                'bars_layout': 'Side-by-side' if '↔️' in bars_layout else 'Vertical stack'
                             })
                     
                     else:  # Multi-Location Comparison
@@ -861,14 +869,20 @@ def display_two_location_comparison(analyzer, location_1, location_2, options, l
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown(f"### 📍 {location_1}")
-        for insight in insights_1[:3]:  # Show top 3 insights
-            st.markdown(f"- {insight}")
+        st.markdown(f"### {location_1}")
+        if insights_1:
+            for insight in insights_1[:5]:  # Show top 5 insights
+                st.markdown(f"• {insight}")
+        else:
+            st.info("No insights available for this location")
     
     with col2:
-        st.markdown(f"### 📍 {location_2}")
-        for insight in insights_2[:3]:  # Show top 3 insights
-            st.markdown(f"- {insight}")
+        st.markdown(f"### {location_2}")
+        if insights_2:
+            for insight in insights_2[:5]:  # Show top 5 insights  
+                st.markdown(f"• {insight}")
+        else:
+            st.info("No insights available for this location")
     
     # Monthly trends with flexible layout
     if options['trends']:
