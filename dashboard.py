@@ -68,9 +68,15 @@ def check_password():
         """Hash password for basic security"""
         return hashlib.sha256(password.encode()).hexdigest()
     
-    # Security settings
-    CORRECT_USERNAME = "Admin"
-    CORRECT_PASSWORD_HASH = hash_password("Sention1!")
+    # Security settings from Streamlit secrets
+    try:
+        CORRECT_USERNAME = st.secrets["auth"]["username"]
+        CORRECT_PASSWORD = st.secrets["auth"]["password"]
+        CORRECT_PASSWORD_HASH = hash_password(CORRECT_PASSWORD)
+    except KeyError:
+        st.error("Authentication credentials not found in secrets. Please configure your secrets properly.")
+        st.stop()
+    
     SESSION_TIMEOUT_MINUTES = 30  # Auto-logout after 30 minutes of inactivity
     
     def check_session_timeout():
@@ -562,13 +568,13 @@ def main():
             'Procent (%) av memberships': [33.6, 18.0, 10.6]
         }
         
-        st.subheader("📊 Sample Data Structure")
+        st.subheader("Sample Data Structure")
         st.dataframe(pd.DataFrame(sample_data))
 
 def display_dashboard(analyzer, sheet_name, options):
     """Display the main dashboard content"""
     
-    st.header(f"📊 Analysis for: {sheet_name}")
+    st.header(f"Analysis for: {sheet_name}")
     
     # Generate insights first
     if options['insights']:
@@ -576,7 +582,7 @@ def display_dashboard(analyzer, sheet_name, options):
             insights = analyzer.generate_insights(sheet_name)
             
             if insights:
-                st.subheader("🔍 Key Insights")
+                st.subheader("Key Insights")
                 for insight in insights:
                     st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
     
@@ -586,7 +592,7 @@ def display_dashboard(analyzer, sheet_name, options):
     # Monthly trends chart
     if options['trends']:
         with col1:
-            st.subheader("📈 Monthly Membership Trends")
+            st.subheader("Monthly Membership Trends")
             try:
                 fig_trends = analyzer.create_monthly_trend_chart(sheet_name)
                 if fig_trends:
@@ -599,7 +605,7 @@ def display_dashboard(analyzer, sheet_name, options):
     # Pie chart
     if options['pie']:
         with col2:
-            st.subheader("🥧 Membership Type Distribution")
+            st.subheader("Membership Type Distribution")
             try:
                 fig_pie = analyzer.create_membership_type_pie_chart(sheet_name)
                 if fig_pie:
@@ -611,7 +617,7 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Heatmap (full width)
     if options['heatmap']:
-        st.subheader("🔥 Membership Activity Heatmap")
+        st.subheader("Membership Activity Heatmap")
         try:
             fig_heatmap = analyzer.create_heatmap(sheet_name)
             if fig_heatmap:
@@ -623,7 +629,7 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Top performers
     if options['top_performers']:
-        st.subheader("🏆 Top Performing Membership Types")
+        st.subheader("Top Performing Membership Types")
         try:
             fig_top = analyzer.create_top_performers_chart(sheet_name)
             if fig_top:
@@ -635,12 +641,12 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Raw data view
     if st.checkbox("Show Raw Data"):
-        st.subheader("📋 Raw Data")
+        st.subheader("Raw Data")
         if sheet_name in analyzer.data:
             st.dataframe(analyzer.data[sheet_name])
     
     # Export options
-    st.subheader("💾 Export Options")
+    st.subheader("Export Options")
     col_export1, col_export2 = st.columns(2)
     
     with col_export1:
@@ -671,7 +677,7 @@ def display_comparison_dashboard(analyzer, options):
         return
     
     # Summary metrics
-    st.subheader("📊 Overview")
+    st.subheader("Overview")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -697,20 +703,20 @@ def display_comparison_dashboard(analyzer, options):
         fig_totals, fig_monthly, fig_growth = analyzer.create_location_comparison_charts()
         
         if options['totals'] and fig_totals:
-            st.subheader("📊 Total Memberships Comparison")
+            st.subheader("Total Memberships Comparison")
             st.plotly_chart(fig_totals, use_container_width=True)
         
         if options['monthly'] and fig_monthly:
-            st.subheader("📈 Monthly Performance Trends")
+            st.subheader("Monthly Performance Trends")
             st.plotly_chart(fig_monthly, use_container_width=True)
         
         if options['growth'] and fig_growth:
-            st.subheader("📈 Growth Rate Comparison")
+            st.subheader("Growth Rate Comparison")
             st.plotly_chart(fig_growth, use_container_width=True)
     
     # Membership distribution comparison
     if options['distribution']:
-        st.subheader("🥧 Membership Type Distribution Comparison")
+        st.subheader("Membership Type Distribution Comparison")
         fig_distribution = analyzer.create_membership_distribution_comparison()
         if fig_distribution:
             st.plotly_chart(fig_distribution, use_container_width=True)
@@ -719,7 +725,7 @@ def display_comparison_dashboard(analyzer, options):
     
     # Summary table
     if options['table']:
-        st.subheader("📋 Detailed Statistics")
+        st.subheader("Detailed Statistics")
         
         # Format the display table
         display_df = comparison_df[['Sheet_Name', 'Total_Memberships', 'Active_Membership_Types', 
@@ -737,7 +743,7 @@ def display_comparison_dashboard(analyzer, options):
         st.dataframe(display_df, use_container_width=True)
     
     # Key insights for comparison
-    st.subheader("🔍 Comparison Insights")
+    st.subheader("Comparison Insights")
     
     insights = []
     
@@ -750,24 +756,24 @@ def display_comparison_dashboard(analyzer, options):
     worst_location = comparison_df.loc[worst_idx, 'Sheet_Name']
     worst_total = comparison_df.loc[worst_idx, 'Total_Memberships']
     
-    insights.append(f"🏆 **Best performing location:** {best_location} with {best_total:,.0f} total memberships")
+    insights.append(f"**Best performing location:** {best_location} with {best_total:,.0f} total memberships")
     
     if len(comparison_df) > 1:
-        insights.append(f"📉 **Lowest performing location:** {worst_location} with {worst_total:,.0f} total memberships")
+        insights.append(f"**Lowest performing location:** {worst_location} with {worst_total:,.0f} total memberships")
         
         # Performance gap
         performance_gap = ((best_total - worst_total) / worst_total) * 100
-        insights.append(f"📊 **Performance gap:** {performance_gap:.1f}% difference between best and worst")
+        insights.append(f"**Performance gap:** {performance_gap:.1f}% difference between best and worst")
     
     # Growth insights
     growing_locations = comparison_df[comparison_df['Growth_Rate'] > 5]
     declining_locations = comparison_df[comparison_df['Growth_Rate'] < -5]
     
     if len(growing_locations) > 0:
-        insights.append(f"📈 **Growing locations:** {len(growing_locations)} location(s) showing strong growth (>5%)")
+        insights.append(f"**Growing locations:** {len(growing_locations)} location(s) showing strong growth (>5%)")
     
     if len(declining_locations) > 0:
-        insights.append(f"📉 **Declining locations:** {len(declining_locations)} location(s) showing decline (<-5%)")
+        insights.append(f"**Declining locations:** {len(declining_locations)} location(s) showing decline (<-5%)")
     
     # Year-over-year comparison if available
     locations_2024 = comparison_df[comparison_df['Year'] == '2024']
@@ -777,13 +783,13 @@ def display_comparison_dashboard(analyzer, options):
         avg_2024 = locations_2024['Total_Memberships'].mean()
         avg_2025 = locations_2025['Total_Memberships'].mean()
         yoy_change = ((avg_2025 - avg_2024) / avg_2024) * 100
-        insights.append(f"📅 **Year-over-year change:** {yoy_change:.1f}% change from 2024 to 2025 average")
+        insights.append(f"**Year-over-year change:** {yoy_change:.1f}% change from 2024 to 2025 average")
     
     for insight in insights:
         st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
     
     # Export comparison
-    st.subheader("💾 Export Comparison")
+    st.subheader("Export Comparison")
     if st.button("Export Comparison Data"):
         try:
             output_file = "location_comparison_analysis.xlsx"
@@ -797,10 +803,10 @@ def display_comparison_dashboard(analyzer, options):
 def display_two_location_comparison(analyzer, location_1, location_2, options):
     """Display side-by-side comparison of two locations"""
     
-    st.header(f"🔄 Comparison: {location_1} vs {location_2}")
+    st.header(f"Comparison: {location_1} vs {location_2}")
     
     # Overview metrics comparison
-    st.subheader("📊 Quick Comparison")
+    st.subheader("Quick Comparison")
     
     # Get insights for both locations
     insights_1 = analyzer.generate_insights(location_1)
@@ -820,7 +826,7 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
     
     # Side-by-side charts
     if options['trends']:
-        st.subheader("📈 Monthly Trends Comparison")
+        st.subheader("Monthly Trends Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -834,7 +840,7 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
                 st.plotly_chart(fig_trends_2, use_container_width=True)
     
     if options['pie']:
-        st.subheader("🥧 Membership Distribution Comparison")
+        st.subheader("Membership Distribution Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -848,7 +854,7 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
                 st.plotly_chart(fig_pie_2, use_container_width=True)
     
     if options['heatmap']:
-        st.subheader("🔥 Activity Heatmaps Comparison")
+        st.subheader("Activity Heatmaps Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -862,7 +868,7 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
                 st.plotly_chart(fig_heatmap_2, use_container_width=True)
     
     if options['top_performers']:
-        st.subheader("🏆 Top Performers Comparison")
+        st.subheader("Top Performers Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
@@ -876,21 +882,21 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
                 st.plotly_chart(fig_top_2, use_container_width=True)
     
     if options['insights']:
-        st.subheader("🔍 Detailed Insights Comparison")
+        st.subheader("Detailed Insights Comparison")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown(f"### 📍 {location_1} - Complete Analysis")
+            st.markdown(f"### {location_1} - Complete Analysis")
             for insight in insights_1:
                 st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
         
         with col2:
-            st.markdown(f"### 📍 {location_2} - Complete Analysis")
+            st.markdown(f"### {location_2} - Complete Analysis")
             for insight in insights_2:
                 st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
     
     # Winner analysis
-    st.subheader("🏅 Head-to-Head Analysis")
+    st.subheader("Head-to-Head Analysis")
     
     try:
         # Extract total memberships from insights
@@ -914,8 +920,8 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
             difference = winner_total - loser_total
             percentage_diff = (difference / loser_total) * 100
             
-            st.success(f"🏆 **Winner: {winner}** with {winner_total:,} total memberships")
-            st.info(f"📊 **Performance Gap:** {difference:,} memberships ({percentage_diff:.1f}% more)")
+            st.success(f"**Winner: {winner}** with {winner_total:,} total memberships")
+            st.info(f"**Performance Gap:** {difference:,} memberships ({percentage_diff:.1f}% more)")
             
             # Performance breakdown
             col1, col2, col3 = st.columns(3)
@@ -935,7 +941,7 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
         st.warning("Could not perform head-to-head analysis")
     
     # Export comparison
-    st.subheader("💾 Export Two-Location Comparison")
+    st.subheader("Export Two-Location Comparison")
     if st.button("Export Comparison Data", key="two_location_export"):
         try:
             output_file = f"{location_1.replace(' ', '_')}_vs_{location_2.replace(' ', '_')}_comparison.xlsx"
