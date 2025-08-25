@@ -239,9 +239,9 @@ class MembershipAnalyzer:
                     hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
                 )
                 fig.update_layout(
-                    height=500,  # Consistent height for all pie charts
+                    height=550,  # Slightly taller to accommodate bottom legend
                     showlegend=True,
-                    margin=dict(t=80, b=20, l=20, r=20)  # Better margins
+                    margin=dict(t=80, b=80, l=20, r=20)  # More bottom margin for legend
                 )
                 
                 return fig
