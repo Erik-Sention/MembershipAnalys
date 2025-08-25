@@ -426,6 +426,38 @@ def main():
                         show_top_performers_comp = st.sidebar.checkbox("Top Performers Comparison", True)
                         show_insights_comp = st.sidebar.checkbox("Comparative Insights", True)
                         
+                        st.sidebar.subheader("Layout Controls")
+                        st.sidebar.markdown("*Choose how to display each chart type:*")
+                        
+                        # Layout options for each chart type
+                        trends_layout = st.sidebar.radio(
+                            "Monthly Trends Layout",
+                            ["Side-by-side", "Vertical stack"],
+                            index=0,
+                            key="trends_layout"
+                        )
+                        
+                        pie_layout = st.sidebar.radio(
+                            "Pie Charts Layout", 
+                            ["Side-by-side", "Vertical stack"],
+                            index=0,
+                            key="pie_layout"
+                        )
+                        
+                        heatmap_layout = st.sidebar.radio(
+                            "Heatmaps Layout",
+                            ["Side-by-side", "Vertical stack"], 
+                            index=1,
+                            key="heatmap_layout"
+                        )
+                        
+                        bars_layout = st.sidebar.radio(
+                            "Bar Charts Layout",
+                            ["Side-by-side", "Vertical stack"],
+                            index=1,
+                            key="bars_layout"
+                        )
+                        
                         # Display two location comparison
                         if location_1 and location_2:
                             display_two_location_comparison(analyzer, location_1, location_2, {
@@ -434,6 +466,11 @@ def main():
                                 'heatmap': show_heatmap_comp,
                                 'top_performers': show_top_performers_comp,
                                 'insights': show_insights_comp
+                            }, {
+                                'trends_layout': trends_layout,
+                                'pie_layout': pie_layout,
+                                'heatmap_layout': heatmap_layout,
+                                'bars_layout': bars_layout
                             })
                     
                     else:  # Multi-Location Comparison
@@ -800,8 +837,17 @@ def display_comparison_dashboard(analyzer, options):
         except Exception as e:
             st.error(f"Export error: {str(e)}")
 
-def display_two_location_comparison(analyzer, location_1, location_2, options):
-    """Display side-by-side comparison of two locations"""
+def display_two_location_comparison(analyzer, location_1, location_2, options, layout_options=None):
+    """Display comparison of two locations with flexible layout options"""
+    
+    # Default layout options if not provided
+    if layout_options is None:
+        layout_options = {
+            'trends_layout': 'Side-by-side',
+            'pie_layout': 'Side-by-side', 
+            'heatmap_layout': 'Vertical stack',
+            'bars_layout': 'Vertical stack'
+        }
     
     st.header(f"Comparison: {location_1} vs {location_2}")
     
@@ -824,72 +870,130 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
         for insight in insights_2[:3]:  # Show top 3 insights
             st.markdown(f"- {insight}")
     
-    # Side-by-side charts
+    # Monthly trends with flexible layout
     if options['trends']:
         st.subheader("Monthly Trends Comparison")
-        col1, col2 = st.columns(2)
         
-        with col1:
-            fig_trends_1 = analyzer.create_monthly_trend_chart(location_1)
-            if fig_trends_1:
-                st.plotly_chart(fig_trends_1, use_container_width=True)
-        
-        with col2:
-            fig_trends_2 = analyzer.create_monthly_trend_chart(location_2)
-            if fig_trends_2:
-                st.plotly_chart(fig_trends_2, use_container_width=True)
+        if layout_options['trends_layout'] == 'Side-by-side':
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"**{location_1}**")
+                fig_trends_1 = analyzer.create_monthly_trend_chart(location_1)
+                if fig_trends_1:
+                    st.plotly_chart(fig_trends_1, use_container_width=True)
+            
+            with col2:
+                st.markdown(f"**{location_2}**")
+                fig_trends_2 = analyzer.create_monthly_trend_chart(location_2)
+                if fig_trends_2:
+                    st.plotly_chart(fig_trends_2, use_container_width=True)
+        else:  # Vertical stack
+            with st.container():
+                st.markdown(f"**{location_1}**")
+                fig_trends_1 = analyzer.create_monthly_trend_chart(location_1)
+                if fig_trends_1:
+                    st.plotly_chart(fig_trends_1, use_container_width=True)
+            
+            with st.container():
+                st.markdown(f"**{location_2}**")
+                fig_trends_2 = analyzer.create_monthly_trend_chart(location_2)
+                if fig_trends_2:
+                    st.plotly_chart(fig_trends_2, use_container_width=True)
     
     if options['pie']:
         st.subheader("Membership Distribution Comparison")
-        col1, col2 = st.columns(2)
         
-        with col1:
-            st.markdown(f"**{location_1}**")
-            fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
-            if fig_pie_1:
-                # Move legend to bottom for better space usage
-                fig_pie_1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
-                st.plotly_chart(fig_pie_1, use_container_width=True)
-        
-        with col2:
-            st.markdown(f"**{location_2}**")
-            fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
-            if fig_pie_2:
-                # Move legend to bottom for better space usage
-                fig_pie_2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
-                st.plotly_chart(fig_pie_2, use_container_width=True)
+        if layout_options['pie_layout'] == 'Side-by-side':
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"**{location_1}**")
+                fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
+                if fig_pie_1:
+                    # Move legend to bottom for better space usage
+                    fig_pie_1.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
+                    st.plotly_chart(fig_pie_1, use_container_width=True)
+            
+            with col2:
+                st.markdown(f"**{location_2}**")
+                fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
+                if fig_pie_2:
+                    # Move legend to bottom for better space usage
+                    fig_pie_2.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.1))
+                    st.plotly_chart(fig_pie_2, use_container_width=True)
+        else:  # Vertical stack
+            with st.container():
+                st.markdown(f"**{location_1}**")
+                fig_pie_1 = analyzer.create_membership_type_pie_chart(location_1)
+                if fig_pie_1:
+                    st.plotly_chart(fig_pie_1, use_container_width=True)
+            
+            with st.container():
+                st.markdown(f"**{location_2}**")
+                fig_pie_2 = analyzer.create_membership_type_pie_chart(location_2)
+                if fig_pie_2:
+                    st.plotly_chart(fig_pie_2, use_container_width=True)
     
     if options['heatmap']:
         st.subheader("Activity Heatmaps Comparison")
         
-        # Tighter spacing between heatmaps
-        with st.container():
-            st.markdown(f"**{location_1}**")
-            fig_heatmap_1 = analyzer.create_heatmap(location_1)
-            if fig_heatmap_1:
-                st.plotly_chart(fig_heatmap_1, use_container_width=True)
-        
-        with st.container():
-            st.markdown(f"**{location_2}**")
-            fig_heatmap_2 = analyzer.create_heatmap(location_2)
-            if fig_heatmap_2:
-                st.plotly_chart(fig_heatmap_2, use_container_width=True)
+        if layout_options['heatmap_layout'] == 'Side-by-side':
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"**{location_1}**")
+                fig_heatmap_1 = analyzer.create_heatmap(location_1)
+                if fig_heatmap_1:
+                    st.plotly_chart(fig_heatmap_1, use_container_width=True)
+            
+            with col2:
+                st.markdown(f"**{location_2}**")
+                fig_heatmap_2 = analyzer.create_heatmap(location_2)
+                if fig_heatmap_2:
+                    st.plotly_chart(fig_heatmap_2, use_container_width=True)
+        else:  # Vertical stack
+            with st.container():
+                st.markdown(f"**{location_1}**")
+                fig_heatmap_1 = analyzer.create_heatmap(location_1)
+                if fig_heatmap_1:
+                    st.plotly_chart(fig_heatmap_1, use_container_width=True)
+            
+            with st.container():
+                st.markdown(f"**{location_2}**")
+                fig_heatmap_2 = analyzer.create_heatmap(location_2)
+                if fig_heatmap_2:
+                    st.plotly_chart(fig_heatmap_2, use_container_width=True)
     
     if options['top_performers']:
         st.subheader("Top Performers Comparison")
         
-        # Tighter spacing between bar charts
-        with st.container():
-            st.markdown(f"**{location_1}**")
-            fig_top_1 = analyzer.create_top_performers_chart(location_1)
-            if fig_top_1:
-                st.plotly_chart(fig_top_1, use_container_width=True)
-        
-        with st.container():
-            st.markdown(f"**{location_2}**")
-            fig_top_2 = analyzer.create_top_performers_chart(location_2)
-            if fig_top_2:
-                st.plotly_chart(fig_top_2, use_container_width=True)
+        if layout_options['bars_layout'] == 'Side-by-side':
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"**{location_1}**")
+                fig_top_1 = analyzer.create_top_performers_chart(location_1)
+                if fig_top_1:
+                    st.plotly_chart(fig_top_1, use_container_width=True)
+            
+            with col2:
+                st.markdown(f"**{location_2}**")
+                fig_top_2 = analyzer.create_top_performers_chart(location_2)
+                if fig_top_2:
+                    st.plotly_chart(fig_top_2, use_container_width=True)
+        else:  # Vertical stack
+            with st.container():
+                st.markdown(f"**{location_1}**")
+                fig_top_1 = analyzer.create_top_performers_chart(location_1)
+                if fig_top_1:
+                    st.plotly_chart(fig_top_1, use_container_width=True)
+            
+            with st.container():
+                st.markdown(f"**{location_2}**")
+                fig_top_2 = analyzer.create_top_performers_chart(location_2)
+                if fig_top_2:
+                    st.plotly_chart(fig_top_2, use_container_width=True)
     
     if options['insights']:
         st.subheader("Detailed Insights Comparison")
