@@ -49,7 +49,17 @@ Each sheet should have:
 pip install -r requirements.txt
 ```
 
-2. Run the dashboard:
+2. **Configure authentication secrets** (REQUIRED):
+   Create `.streamlit/secrets.toml` file with your login credentials:
+   ```toml
+   [auth]
+   username = "Admin"
+   password = "Sention1!"
+   ```
+   
+   **Important**: This file is ignored by Git for security. Never commit secrets to version control!
+
+3. Run the dashboard:
 ```bash
 streamlit run dashboard.py
 ```
@@ -57,10 +67,19 @@ streamlit run dashboard.py
 ## 🌐 Online Deployment
 
 ### Streamlit Community Cloud (Recommended)
-1. Push this repository to GitHub
+1. Push this repository to GitHub (secrets.toml is automatically ignored)
 2. Go to [share.streamlit.io](https://share.streamlit.io)
 3. Connect your GitHub repository
-4. Deploy with main file: `streamlit_app.py`
+4. **Configure secrets in Streamlit Cloud**:
+   - Go to your app settings
+   - Click on "Secrets" tab
+   - Add your authentication credentials:
+   ```toml
+   [auth]
+   username = "Admin"
+   password = "Sention1!"
+   ```
+5. Deploy with main file: `streamlit_app.py`
 
 ### Vercel Deployment
 1. Install Vercel CLI: `npm i -g vercel`
