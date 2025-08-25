@@ -772,6 +772,92 @@ class MembershipAnalyzer:
         
         return fig
     
+    def create_two_location_distribution_comparison(self, location_1, location_2):
+        """
+        Create a stacked bar chart comparing membership distribution between two locations
+        """
+        comparison_data = []
+        
+        for sheet_name in [location_1, location_2]:
+            if sheet_name not in self.data:
+                continue
+                
+            df = self.data[sheet_name]
+            
+            # Find membership column
+            membership_col = None
+            for col in df.columns:
+                if 'membership' in col.lower() or col.strip() == 'Membership':
+                    membership_col = col
+                    break
+            
+            if not membership_col and len(df.columns) > 0:
+                membership_col = df.columns[0]
+            
+            # Get month columns for calculating totals
+            month_columns = [col for col in df.columns if any(month in col.lower() for month in 
+                            ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 
+                             'juli', 'augusti', 'september', 'oktober', 'november', 'december'])]
+            
+            if membership_col and month_columns:
+                for _, row in df.iterrows():
+                    membership_type = str(row[membership_col]).strip()
+                    
+                    # Skip summary rows
+                    if any(skip_word in membership_type.lower() for skip_word in 
+                          ['summa', 'total', 'sum', 'totalt']):
+                        continue
+                    
+                    # Calculate total from monthly data
+                    total = 0
+                    for month in month_columns:
+                        try:
+                            value = pd.to_numeric(row[month], errors='coerce')
+                            if pd.notna(value):
+                                total += value
+                        except:
+                            continue
+                    
+                    if total > 0:
+                        comparison_data.append({
+                            'Location': sheet_name,
+                            'Membership_Type': membership_type,
+                            'Total': total
+                        })
+        
+        if not comparison_data:
+            return None
+        
+        comparison_df = pd.DataFrame(comparison_data)
+        
+        # Create stacked bar chart showing membership distribution by location
+        fig = px.bar(
+            comparison_df,
+            x='Location',
+            y='Total',
+            color='Membership_Type',
+            title=f'Membership Distribution: {location_1} vs {location_2}',
+            labels={'Total': 'Number of Members', 'Location': 'Location & Year'},
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        
+        fig.update_layout(
+            xaxis_title='Location & Year',
+            yaxis_title='Number of Members',
+            height=600,
+            legend_title='Membership Types',
+            margin=dict(t=80, b=80, l=60, r=60),
+            legend=dict(
+                orientation="v",
+                yanchor="top",
+                y=1,
+                xanchor="left", 
+                x=1.02
+            )
+        )
+        
+        return fig
+    
     def export_summary(self, output_file='membership_summary.xlsx'):
         """
         Export a summary of all sheets to Excel
