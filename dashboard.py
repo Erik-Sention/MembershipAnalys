@@ -855,17 +855,18 @@ def display_two_location_comparison(analyzer, location_1, location_2, options):
     
     if options['heatmap']:
         st.subheader("Activity Heatmaps Comparison")
-        col1, col2 = st.columns(2)
         
-        with col1:
-            fig_heatmap_1 = analyzer.create_heatmap(location_1)
-            if fig_heatmap_1:
-                st.plotly_chart(fig_heatmap_1, use_container_width=True)
+        # First location heatmap
+        st.markdown(f"#### {location_1}")
+        fig_heatmap_1 = analyzer.create_heatmap(location_1)
+        if fig_heatmap_1:
+            st.plotly_chart(fig_heatmap_1, use_container_width=True)
         
-        with col2:
-            fig_heatmap_2 = analyzer.create_heatmap(location_2)
-            if fig_heatmap_2:
-                st.plotly_chart(fig_heatmap_2, use_container_width=True)
+        # Second location heatmap  
+        st.markdown(f"#### {location_2}")
+        fig_heatmap_2 = analyzer.create_heatmap(location_2)
+        if fig_heatmap_2:
+            st.plotly_chart(fig_heatmap_2, use_container_width=True)
     
     if options['top_performers']:
         st.subheader("Top Performers Comparison")
