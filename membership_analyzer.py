@@ -772,6 +772,104 @@ class MembershipAnalyzer:
         
         return fig
     
+    def create_membership_trends_by_type(self, sheet_name=None):
+        """
+        Create a line chart showing monthly trends for each membership type separately
+        """
+        if sheet_name and sheet_name in self.data:
+            df = self.data[sheet_name]
+        else:
+            df = list(self.data.values())[0]
+            sheet_name = list(self.data.keys())[0]
+        
+        # Find membership column
+        membership_col = None
+        for col in df.columns:
+            if 'membership' in col.lower() or col.strip() == 'Membership':
+                membership_col = col
+                break
+        
+        if not membership_col and len(df.columns) > 0:
+            membership_col = df.columns[0]
+        
+        # Get month columns
+        month_columns = [col for col in df.columns if any(month in col.lower() for month in 
+                        ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 
+                         'juli', 'augusti', 'september', 'oktober', 'november', 'december'])]
+        
+        if not membership_col or not month_columns:
+            return None
+        
+        # Prepare data for multi-line chart
+        trend_data = []
+        
+        for _, row in df.iterrows():
+            membership_type = str(row[membership_col]).strip()
+            
+            # Skip summary rows
+            if any(skip_word in membership_type.lower() for skip_word in 
+                  ['summa', 'total', 'sum', 'totalt']):
+                continue
+            
+            # Add data for each month
+            for month in month_columns:
+                try:
+                    value = pd.to_numeric(row[month], errors='coerce')
+                    if pd.notna(value) and value > 0:
+                        # Extract month name for better display
+                        month_name = month.split()[0] if ' ' in month else month
+                        
+                        trend_data.append({
+                            'Month': month_name,
+                            'Membership_Type': membership_type,
+                            'Count': value,
+                            'Month_Order': month_columns.index(month)
+                        })
+                except:
+                    continue
+        
+        if not trend_data:
+            return None
+        
+        trend_df = pd.DataFrame(trend_data)
+        
+        # Sort by month order for proper line progression
+        trend_df = trend_df.sort_values('Month_Order')
+        
+        # Create multi-line chart
+        fig = px.line(
+            trend_df,
+            x='Month',
+            y='Count',
+            color='Membership_Type',
+            title=f'Monthly Membership Trends by Type - {sheet_name}',
+            labels={'Count': 'New Memberships', 'Month': 'Month'},
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        
+        fig.update_traces(mode='lines+markers', line=dict(width=2), marker=dict(size=6))
+        
+        fig.update_layout(
+            xaxis_title='Month',
+            yaxis_title='New Memberships',
+            height=600,
+            legend_title='Membership Types',
+            margin=dict(t=80, b=80, l=60, r=60),
+            legend=dict(
+                orientation="v",
+                yanchor="top",
+                y=1,
+                xanchor="left",
+                x=1.02
+            ),
+            hovermode='x unified'
+        )
+        
+        # Rotate x-axis labels for better readability
+        fig.update_xaxes(tickangle=45)
+        
+        return fig
+    
     def create_two_location_distribution_comparison(self, location_1, location_2):
         """
         Create a stacked bar chart comparing membership distribution between two locations
