@@ -17,6 +17,23 @@ class MembershipAnalyzer:
         self.data = {}
         self.combined_data = None
         
+        # Define the correct membership types that should be shown
+        self.valid_membership_types = {
+            'Standard',
+            'Standard TRI/OCR/MULTI', 
+            'Premium',
+            'Premium TRI/OCR/MULTI',
+            'Supreme',
+            'Supreme TRI/OCR/MULTI',
+            'Iform 4 mån',
+            'Iform Tillägg till MS 4 mån',
+            'Iform Extra månad',
+            'Iform Fortsättning',
+            'BAS',
+            'Avslut',
+            'Konvertering från test till membership'
+        }
+        
     def load_data(self):
         """
         Load all sheets from the Excel file
@@ -81,18 +98,27 @@ class MembershipAnalyzer:
                     )
                     clean_df = clean_df[mask].copy()
                 
-                # Add metadata columns
+                # Rename first column to 'Membership' if needed
+                if len(clean_df.columns) > 0:
+                    first_col = clean_df.columns[0]
+                    if first_col != 'Membership' and not first_col in ['Location', 'Year', 'Sheet_Name']:
+                        clean_df = clean_df.rename(columns={first_col: 'Membership'})
+                
+                # Filter to only valid membership types
+                if 'Membership' in clean_df.columns:
+                    before_filter = len(clean_df)
+                    clean_df = clean_df[clean_df['Membership'].isin(self.valid_membership_types)].copy()
+                    after_filter = len(clean_df)
+                    if before_filter != after_filter:
+                        print(f"🔍 Filtered {sheet_name}: {before_filter} → {after_filter} rows (removed {before_filter - after_filter} invalid types)")
+                
+                # Add metadata columns AFTER filtering
                 clean_df['Location'] = location
                 clean_df['Year'] = year
                 clean_df['Sheet_Name'] = sheet_name
                 
-                # Rename first column to 'Membership' if needed
-                if len(clean_df.columns) > 3:  # Make sure we have actual data
-                    first_col = clean_df.columns[0]
-                    if first_col != 'Membership' and not first_col in ['Location', 'Year', 'Sheet_Name']:
-                        clean_df = clean_df.rename(columns={first_col: 'Membership'})
-                    
-                    # Store cleaned data
+                # Store cleaned data if we have actual membership data
+                if len(clean_df) > 0 and 'Membership' in clean_df.columns:
                     cleaned_data[sheet_name] = clean_df
                     print(f"✅ Cleaned {sheet_name}: {len(clean_df)} rows, {len(clean_df.columns)} columns")
                     
@@ -102,6 +128,35 @@ class MembershipAnalyzer:
         
         self.data = cleaned_data
         return len(cleaned_data) > 0
+    
+    def combine_data_from_all_sheets(self):
+        """
+        Combine data from all sheets into a single DataFrame for analysis
+        """
+        if not self.data:
+            print("No data loaded. Please call load_data() and clean_and_standardize_data() first.")
+            return None
+        
+        combined_dfs = []
+        
+        for sheet_name, df in self.data.items():
+            if 'Membership' in df.columns and len(df) > 0:
+                combined_dfs.append(df.copy())
+        
+        if combined_dfs:
+            self.combined_data = pd.concat(combined_dfs, ignore_index=True)
+            print(f"✅ Combined data from {len(combined_dfs)} sheets: {len(self.combined_data)} total rows")
+            
+            # Show unique membership types in combined data
+            unique_memberships = sorted(self.combined_data['Membership'].unique())
+            print(f"📋 Valid membership types found: {len(unique_memberships)}")
+            for m in unique_memberships:
+                print(f"   - {m}")
+            
+            return self.combined_data
+        else:
+            print("No valid data found to combine")
+            return None
     
     def create_monthly_trend_chart(self, sheet_name=None):
         """
