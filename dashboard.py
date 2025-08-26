@@ -628,11 +628,11 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Vertical layout for all charts
     
-    # Monthly trends chart
+    # Monthly trends chart - by membership type
     if options['trends']:
-        st.subheader("Monthly Membership Trends")
+        st.subheader("Monthly Membership Trends by Type")
         try:
-            fig_trends = analyzer.create_monthly_trend_chart(sheet_name)
+            fig_trends = analyzer.create_membership_trends_by_type(sheet_name)
             if fig_trends:
                 st.plotly_chart(fig_trends, use_container_width=True)
             else:
@@ -876,34 +876,34 @@ def display_two_location_comparison(analyzer, location_1, location_2, options, l
         else:
             st.info("No insights available for this location")
     
-    # Monthly trends with flexible layout
+    # Monthly trends with flexible layout - by membership type
     if options['trends']:
-        st.subheader("Monthly Trends Comparison")
+        st.subheader("Monthly Trends Comparison by Type")
         
         if layout_options['trends_layout'] == 'Side-by-side':
             col1, col2 = st.columns(2)
             
             with col1:
                 st.markdown(f"**{location_1}**")
-                fig_trends_1 = analyzer.create_monthly_trend_chart(location_1)
+                fig_trends_1 = analyzer.create_membership_trends_by_type(location_1)
                 if fig_trends_1:
                     st.plotly_chart(fig_trends_1, use_container_width=True)
             
             with col2:
                 st.markdown(f"**{location_2}**")
-                fig_trends_2 = analyzer.create_monthly_trend_chart(location_2)
+                fig_trends_2 = analyzer.create_membership_trends_by_type(location_2)
                 if fig_trends_2:
                     st.plotly_chart(fig_trends_2, use_container_width=True)
         else:  # Vertical stack
             with st.container():
                 st.markdown(f"**{location_1}**")
-                fig_trends_1 = analyzer.create_monthly_trend_chart(location_1)
+                fig_trends_1 = analyzer.create_membership_trends_by_type(location_1)
                 if fig_trends_1:
                     st.plotly_chart(fig_trends_1, use_container_width=True)
             
             with st.container():
                 st.markdown(f"**{location_2}**")
-                fig_trends_2 = analyzer.create_monthly_trend_chart(location_2)
+                fig_trends_2 = analyzer.create_membership_trends_by_type(location_2)
                 if fig_trends_2:
                     st.plotly_chart(fig_trends_2, use_container_width=True)
     
