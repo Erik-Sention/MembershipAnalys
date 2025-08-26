@@ -847,7 +847,15 @@ class MembershipAnalyzer:
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         
-        fig.update_traces(mode='lines+markers', line=dict(width=2), marker=dict(size=6))
+        fig.update_traces(
+            mode='lines+markers', 
+            line=dict(width=2), 
+            marker=dict(size=6),
+            hovertemplate='<b>%{fullData.name}</b><br>' +
+                         'Month: %{x}<br>' +
+                         'New Memberships: %{y}<br>' +
+                         '<extra></extra>'  # Remove trace box
+        )
         
         fig.update_layout(
             xaxis_title='Month',
@@ -862,7 +870,7 @@ class MembershipAnalyzer:
                 xanchor="left",
                 x=1.02
             ),
-            hovermode='x unified'
+            hovermode='closest'  # Show only the closest point/line
         )
         
         # Rotate x-axis labels for better readability
