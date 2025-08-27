@@ -194,19 +194,37 @@ def main():
         if st.button("Logout", help="Logout and return to login screen"):
             logout()
     
-    st.markdown('<h1 class="main-header">Membership Analysis Dashboard</h1>', unsafe_allow_html=True)
+    # Sidebar for data source selection
+    st.sidebar.header("Data Source")
     
-    # Sidebar for file upload and sheet selection
-    st.sidebar.header("Data Input")
+    # Data source selector
+    data_source = st.sidebar.selectbox(
+        "Select Data Type",
+        ["Memberships", "Tests"],
+        help="Choose between Membership data or Tests data analysis"
+    )
+    
+    dashboard_title = "Tests Analysis Dashboard" if data_source == "Tests" else "Membership Analysis Dashboard"
+    st.markdown(f'<h1 class="main-header">{dashboard_title}</h1>', unsafe_allow_html=True)
+    
+    # Determine file paths based on data source
+    if data_source == "Memberships":
+        auto_load_files = [
+            'data.xlsx',
+            'membership_data.xlsx',
+            'memberships.xlsx', 
+            'Masterdokument Memberships Antal.xlsx'
+        ]
+        data_type = 'memberships'
+    else:  # Tests
+        auto_load_files = [
+            'data2.xlsx',
+            'test_data.xlsx',
+            'tests.xlsx'
+        ]
+        data_type = 'tests'
     
     # Check for auto-load file in root directory
-    auto_load_files = [
-        'membership_data.xlsx',
-        'memberships.xlsx', 
-        'data.xlsx',
-        'Masterdokument Memberships Antal.xlsx'  # Your actual filename
-    ]
-    
     auto_file = None
     for filename in auto_load_files:
         if os.path.exists(filename):
@@ -214,13 +232,13 @@ def main():
             break
     
     if auto_file:
-        st.sidebar.success(f"Data loaded: {auto_file}")
+        st.sidebar.success(f"📊 {data_source} data loaded: {auto_file}")
         use_auto_file = st.sidebar.button("Reload Data", help="Refresh data from the file")
         
         uploaded_file = auto_file
         temp_file_path = auto_file  # Use file directly, no need to save temp
     else:
-        st.sidebar.error("**No data file found**")
+        st.sidebar.error(f"**No {data_source.lower()} data file found**")
         st.sidebar.info("**Please add your Excel file to the root directory with one of these names:**")
         st.sidebar.write("• `membership_data.xlsx`")
         st.sidebar.write("• `memberships.xlsx`") 
@@ -230,8 +248,8 @@ def main():
     
     if uploaded_file is not None:
         try:
-            # Initialize analyzer
-            analyzer = MembershipAnalyzer(temp_file_path)
+            # Initialize analyzer with data type
+            analyzer = MembershipAnalyzer(temp_file_path, data_type)
             
             # Load and process data
             with st.spinner("Loading data..."):
@@ -257,67 +275,71 @@ def main():
                     
                     if analysis_mode == "Single Location Analysis":
                         # Row filtering options
-                        st.sidebar.subheader("Filter Membership Types")
+                        data_type_label = "Test Types" if data_type == 'tests' else "Membership Types"
+                        st.sidebar.subheader(f"Filter {data_type_label}")
                         
-                        # Get available membership types for the selected sheet
+                        # Get available types for the selected sheet
                         if selected_sheet in analyzer.data:
                             df = analyzer.data[selected_sheet]
-                            membership_col = None
-                            for col in df.columns:
-                                if 'membership' in col.lower() or col.strip() == 'Membership':
-                                    membership_col = col
-                                    break
-                            if not membership_col and len(df.columns) > 0:
-                                membership_col = df.columns[0]
+                            data_col_name = 'Test' if data_type == 'tests' else 'Membership'
+                            data_col = None
                             
-                            if membership_col:
-                                all_memberships = df[membership_col].astype(str).str.strip().tolist()
-                                all_memberships = [m for m in all_memberships if m and m.lower() not in ['nan', 'none', '']]
+                            for col in df.columns:
+                                if data_col_name.lower() in col.lower() or col.strip() == data_col_name:
+                                    data_col = col
+                                    break
+                            if not data_col and len(df.columns) > 0:
+                                data_col = df.columns[0]
+                            
+                            if data_col:
+                                all_types = df[data_col].astype(str).str.strip().tolist()
+                                all_types = [t for t in all_types if t and t.lower() not in ['nan', 'none', '']]
                                 
-                                # Show all membership types with checkboxes for better visibility
-                                st.sidebar.write("**Available membership types:**")
+                                # Show all types with checkboxes for better visibility
+                                st.sidebar.write(f"**Available {data_type_label.lower()}:**")
                                 
                                 # Create a container for better layout
                                 with st.sidebar.container():
                                     # Use session state to track selections
-                                    if 'selected_memberships' not in st.session_state:
-                                        st.session_state.selected_memberships = all_memberships.copy()
+                                    if 'selected_types' not in st.session_state:
+                                        st.session_state.selected_types = all_types.copy()
                                     
                                     # Select/Deselect all buttons
                                     col1, col2 = st.columns(2)
                                     with col1:
                                         if st.button("Select All", key="select_all_single"):
-                                            st.session_state.selected_memberships = all_memberships.copy()
+                                            st.session_state.selected_types = all_types.copy()
                                     with col2:
                                         if st.button("Clear All", key="clear_all_single"):
-                                            st.session_state.selected_memberships = []
+                                            st.session_state.selected_types = []
                                     
-                                    # Individual checkboxes for each membership type
-                                    selected_memberships = []
-                                    for i, membership in enumerate(all_memberships):
-                                        is_selected = membership in st.session_state.selected_memberships
+                                    # Individual checkboxes for each type
+                                    selected_types = []
+                                    for i, type_name in enumerate(all_types):
+                                        is_selected = type_name in st.session_state.selected_types
                                         
                                         if st.checkbox(
-                                            membership, 
+                                            type_name, 
                                             value=is_selected, 
-                                            key=f"single_membership_{i}_{membership[:20]}"
+                                            key=f"single_type_{i}_{type_name[:20]}"
                                         ):
-                                            selected_memberships.append(membership)
+                                            selected_types.append(type_name)
                                     
                                     # Update session state
-                                    st.session_state.selected_memberships = selected_memberships
+                                    st.session_state.selected_types = selected_types
                                     
                                     # Show count
-                                    st.write(f"Selected: {len(selected_memberships)} of {len(all_memberships)}")
+                                    st.write(f"Selected: {len(selected_types)} of {len(all_types)}")
                                 
                                 # Filter the data
-                                if selected_memberships:
-                                    analyzer.data[selected_sheet] = df[df[membership_col].isin(selected_memberships)].copy()
+                                if selected_types:
+                                    analyzer.data[selected_sheet] = df[df[data_col].isin(selected_types)].copy()
                         
                         # Analysis options for single location
                         st.sidebar.subheader("Display Options")
                         show_trends = st.sidebar.checkbox("Monthly Trends", True)
-                        show_pie = st.sidebar.checkbox("Membership Distribution", True)
+                        distribution_label = "Test Distribution" if data_type == 'tests' else "Membership Distribution"
+                        show_pie = st.sidebar.checkbox(distribution_label, True)
                         show_heatmap = st.sidebar.checkbox("Activity Heatmap", True)
                         show_top_performers = st.sidebar.checkbox("Top Performers", True)
                         show_insights = st.sidebar.checkbox("Automated Insights", True)
@@ -330,7 +352,7 @@ def main():
                                 'heatmap': show_heatmap,
                                 'top_performers': show_top_performers,
                                 'insights': show_insights
-                            })
+                            }, data_type)
                     
                     elif analysis_mode == "Two Location Comparison":
                         # Two location comparison options
@@ -348,80 +370,95 @@ def main():
                         )
                         
                         # Row filtering for two location comparison
-                        st.sidebar.subheader("Filter Membership Types")
+                        data_type_label = "Test Types" if data_type == 'tests' else "Membership Types"
+                        st.sidebar.subheader(f"Filter {data_type_label}")
                         
-                        # Get all unique membership types from both locations
-                        all_memberships_set = set()
+                        # Get all unique types from both locations
+                        data_col_name = 'Test' if data_type == 'tests' else 'Membership'
+                        all_types_set = set()
                         for loc in [location_1, location_2]:
                             if loc and loc in analyzer.data:
                                 df = analyzer.data[loc]
-                                membership_col = None
-                                for col in df.columns:
-                                    if 'membership' in col.lower() or col.strip() == 'Membership':
-                                        membership_col = col
-                                        break
-                                if not membership_col and len(df.columns) > 0:
-                                    membership_col = df.columns[0]
+                                data_col = None
                                 
-                                if membership_col:
-                                    memberships = df[membership_col].astype(str).str.strip().tolist()
-                                    all_memberships_set.update([m for m in memberships if m and m.lower() not in ['nan', 'none', '']])
+                                for col in df.columns:
+                                    try:
+                                        col_str = str(col).lower()
+                                        if data_col_name.lower() in col_str or str(col).strip() == data_col_name:
+                                            data_col = col
+                                            break
+                                    except:
+                                        continue
+                                
+                                if not data_col and len(df.columns) > 0:
+                                    data_col = df.columns[0]
+                                
+                                if data_col:
+                                    types = df[data_col].astype(str).str.strip().tolist()
+                                    all_types_set.update([t for t in types if t and t.lower() not in ['nan', 'none', '']])
                         
-                        all_memberships_list = sorted(list(all_memberships_set))
+                        all_types_list = sorted(list(all_types_set))
                         
-                        if all_memberships_list:
-                            st.sidebar.write("**Available membership types:**")
+                        if all_types_list:
+                            st.sidebar.write(f"**Available {data_type_label.lower()}:**")
                             
                             with st.sidebar.container():
                                 # Use session state for two location comparison
-                                if 'selected_memberships_comp' not in st.session_state:
-                                    st.session_state.selected_memberships_comp = all_memberships_list.copy()
+                                if 'selected_types_comp' not in st.session_state:
+                                    st.session_state.selected_types_comp = all_types_list.copy()
                                 
                                 # Select/Deselect all buttons
                                 col1, col2 = st.columns(2)
                                 with col1:
                                     if st.button("Select All", key="select_all_comp"):
-                                        st.session_state.selected_memberships_comp = all_memberships_list.copy()
+                                        st.session_state.selected_types_comp = all_types_list.copy()
                                 with col2:
                                     if st.button("Clear All", key="clear_all_comp"):
-                                        st.session_state.selected_memberships_comp = []
+                                        st.session_state.selected_types_comp = []
                                 
                                 # Individual checkboxes
-                                selected_memberships_comp = []
-                                for i, membership in enumerate(all_memberships_list):
-                                    is_selected = membership in st.session_state.selected_memberships_comp
+                                selected_types_comp = []
+                                for i, type_name in enumerate(all_types_list):
+                                    is_selected = type_name in st.session_state.selected_types_comp
                                     
                                     if st.checkbox(
-                                        membership, 
+                                        type_name, 
                                         value=is_selected, 
-                                        key=f"comp_membership_{i}_{membership[:20]}"
+                                        key=f"comp_type_{i}_{type_name[:20]}"
                                     ):
-                                        selected_memberships_comp.append(membership)
+                                        selected_types_comp.append(type_name)
                                 
                                 # Update session state
-                                st.session_state.selected_memberships_comp = selected_memberships_comp
+                                st.session_state.selected_types_comp = selected_types_comp
                                 
                                 # Show count
-                                st.write(f"Selected: {len(selected_memberships_comp)} of {len(all_memberships_list)}")
+                                st.write(f"Selected: {len(selected_types_comp)} of {len(all_types_list)}")
                             
                             # Filter both locations
                             for loc in [location_1, location_2]:
-                                if loc and loc in analyzer.data and selected_memberships_comp:
+                                if loc and loc in analyzer.data and selected_types_comp:
                                     df = analyzer.data[loc]
-                                    membership_col = None
-                                    for col in df.columns:
-                                        if 'membership' in col.lower() or col.strip() == 'Membership':
-                                            membership_col = col
-                                            break
-                                    if not membership_col and len(df.columns) > 0:
-                                        membership_col = df.columns[0]
+                                    data_col = None
                                     
-                                    if membership_col:
-                                        analyzer.data[loc] = df[df[membership_col].isin(selected_memberships_comp)].copy()
+                                    for col in df.columns:
+                                        try:
+                                            col_str = str(col).lower()
+                                            if data_col_name.lower() in col_str or str(col).strip() == data_col_name:
+                                                data_col = col
+                                                break
+                                        except:
+                                            continue
+                                    
+                                    if not data_col and len(df.columns) > 0:
+                                        data_col = df.columns[0]
+                                    
+                                    if data_col:
+                                        analyzer.data[loc] = df[df[data_col].isin(selected_types_comp)].copy()
                         
                         st.sidebar.subheader("Display Options")
                         show_trends_comp = st.sidebar.checkbox("Monthly Trends Comparison", True)
-                        show_pie_comp = st.sidebar.checkbox("Membership Distribution Comparison", True)
+                        distribution_label = f"{data_type_label} Distribution Comparison" if data_type == 'tests' else "Membership Distribution Comparison"
+                        show_pie_comp = st.sidebar.checkbox(distribution_label, True)
                         show_heatmap_comp = st.sidebar.checkbox("Activity Heatmaps", True)
                         show_top_performers_comp = st.sidebar.checkbox("Top Performers Comparison", True)
                         show_insights_comp = st.sidebar.checkbox("Comparative Insights", True)
@@ -474,88 +511,106 @@ def main():
                                 'pie_layout': 'Side-by-side' if '↔️' in pie_layout else 'Vertical stack',
                                 'heatmap_layout': 'Side-by-side' if '↔️' in heatmap_layout else 'Vertical stack',
                                 'bars_layout': 'Side-by-side' if '↔️' in bars_layout else 'Vertical stack'
-                            })
+                            }, data_type)
                     
                     else:  # Multi-Location Comparison
                         # Row filtering for multi-location comparison
-                        st.sidebar.subheader("Filter Membership Types")
+                        data_type_label = "Test Types" if data_type == 'tests' else "Membership Types"
+                        st.sidebar.subheader(f"Filter {data_type_label}")
                         
-                        # Get all unique membership types from all locations
-                        all_memberships_set = set()
+                        # Get all unique types from all locations
+                        data_col_name = 'Test' if data_type == 'tests' else 'Membership'
+                        all_types_set = set()
+                        
                         for sheet_name in available_sheets:
                             if sheet_name in analyzer.data:
                                 df = analyzer.data[sheet_name]
-                                membership_col = None
-                                for col in df.columns:
-                                    if 'membership' in col.lower() or col.strip() == 'Membership':
-                                        membership_col = col
-                                        break
-                                if not membership_col and len(df.columns) > 0:
-                                    membership_col = df.columns[0]
+                                data_col = None
                                 
-                                if membership_col:
-                                    memberships = df[membership_col].astype(str).str.strip().tolist()
-                                    all_memberships_set.update([m for m in memberships if m and m.lower() not in ['nan', 'none', '']])
+                                for col in df.columns:
+                                    try:
+                                        col_str = str(col).lower()
+                                        if data_col_name.lower() in col_str or str(col).strip() == data_col_name:
+                                            data_col = col
+                                            break
+                                    except:
+                                        continue
+                                
+                                if not data_col and len(df.columns) > 0:
+                                    data_col = df.columns[0]
+                                
+                                if data_col:
+                                    types = df[data_col].astype(str).str.strip().tolist()
+                                    all_types_set.update([t for t in types if t and t.lower() not in ['nan', 'none', '']])
                         
-                        all_memberships_list = sorted(list(all_memberships_set))
+                        all_types_list = sorted(list(all_types_set))
                         
-                        if all_memberships_list:
-                            st.sidebar.write("**Available membership types:**")
+                        if all_types_list:
+                            st.sidebar.write(f"**Available {data_type_label.lower()}:**")
                             
                             with st.sidebar.container():
                                 # Use session state for multi-location comparison
-                                if 'selected_memberships_multi' not in st.session_state:
-                                    st.session_state.selected_memberships_multi = all_memberships_list.copy()
+                                if 'selected_types_multi' not in st.session_state:
+                                    st.session_state.selected_types_multi = all_types_list.copy()
                                 
                                 # Select/Deselect all buttons
                                 col1, col2 = st.columns(2)
                                 with col1:
                                     if st.button("Select All", key="select_all_multi"):
-                                        st.session_state.selected_memberships_multi = all_memberships_list.copy()
+                                        st.session_state.selected_types_multi = all_types_list.copy()
                                 with col2:
                                     if st.button("Clear All", key="clear_all_multi"):
-                                        st.session_state.selected_memberships_multi = []
+                                        st.session_state.selected_types_multi = []
                                 
                                 # Individual checkboxes
-                                selected_memberships_multi = []
-                                for i, membership in enumerate(all_memberships_list):
-                                    is_selected = membership in st.session_state.selected_memberships_multi
+                                selected_types_multi = []
+                                for i, type_name in enumerate(all_types_list):
+                                    is_selected = type_name in st.session_state.selected_types_multi
                                     
                                     if st.checkbox(
-                                        membership, 
+                                        type_name, 
                                         value=is_selected, 
-                                        key=f"multi_membership_{i}_{membership[:20]}"
+                                        key=f"multi_type_{i}_{type_name[:20]}"
                                     ):
-                                        selected_memberships_multi.append(membership)
+                                        selected_types_multi.append(type_name)
                                 
                                 # Update session state
-                                st.session_state.selected_memberships_multi = selected_memberships_multi
+                                st.session_state.selected_types_multi = selected_types_multi
                                 
                                 # Show count
-                                st.write(f"Selected: {len(selected_memberships_multi)} of {len(all_memberships_list)}")
+                                st.write(f"Selected: {len(selected_types_multi)} of {len(all_types_list)}")
                             
                             # Filter all locations
-                            if selected_memberships_multi:
+                            if selected_types_multi:
                                 for sheet_name in available_sheets:
                                     if sheet_name in analyzer.data:
                                         df = analyzer.data[sheet_name]
-                                        membership_col = None
-                                        for col in df.columns:
-                                            if 'membership' in col.lower() or col.strip() == 'Membership':
-                                                membership_col = col
-                                                break
-                                        if not membership_col and len(df.columns) > 0:
-                                            membership_col = df.columns[0]
+                                        data_col = None
                                         
-                                        if membership_col:
-                                            analyzer.data[sheet_name] = df[df[membership_col].isin(selected_memberships_multi)].copy()
+                                        for col in df.columns:
+                                            try:
+                                                col_str = str(col).lower()
+                                                if data_col_name.lower() in col_str or str(col).strip() == data_col_name:
+                                                    data_col = col
+                                                    break
+                                            except:
+                                                continue
+                                        
+                                        if not data_col and len(df.columns) > 0:
+                                            data_col = df.columns[0]
+                                        
+                                        if data_col:
+                                            analyzer.data[sheet_name] = df[df[data_col].isin(selected_types_multi)].copy()
                         
                         # Comparison options
                         st.sidebar.subheader("Comparison Options")
-                        show_totals_comparison = st.sidebar.checkbox("Total Memberships Comparison", True)
+                        data_label = "Tests" if data_type == 'tests' else "Memberships"
+                        total_label = f"Total {data_label} Comparison" if data_type == 'tests' else "Total Memberships Comparison"
+                        show_totals_comparison = st.sidebar.checkbox(total_label, True)
                         show_monthly_comparison = st.sidebar.checkbox("Monthly Performance Trends", True)
                         show_growth_comparison = st.sidebar.checkbox("Growth Rate Comparison", True)
-                        show_distribution_comparison = st.sidebar.checkbox("Membership Distribution Comparison", True)
+                        distribution_label = f"{data_type_label} Distribution Comparison" if data_type == 'tests' else "Membership Distribution Comparison"
+                        show_distribution_comparison = st.sidebar.checkbox(distribution_label, True)
                         show_summary_table = st.sidebar.checkbox("Summary Statistics Table", True)
                         
                         # Display comparison dashboard
@@ -565,7 +620,7 @@ def main():
                             'growth': show_growth_comparison,
                             'distribution': show_distribution_comparison,
                             'table': show_summary_table
-                        })
+                        }, data_type)
                 else:
                     st.error("Failed to load the Excel file. Please check the file format.")
         
@@ -611,7 +666,7 @@ def main():
         st.subheader("Sample Data Structure")
         st.dataframe(pd.DataFrame(sample_data))
 
-def display_dashboard(analyzer, sheet_name, options):
+def display_dashboard(analyzer, sheet_name, options, data_type='memberships'):
     """Display the main dashboard content"""
     
     st.header(f"Analysis for: {sheet_name}")
@@ -628,9 +683,10 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Vertical layout for all charts
     
-    # Monthly trends chart - by membership type
+    # Monthly trends chart - by type
     if options['trends']:
-        st.subheader("Monthly Membership Trends by Type")
+        data_label = "Test" if data_type == 'tests' else "Membership"
+        st.subheader(f"Monthly {data_label} Trends by Type")
         try:
             fig_trends = analyzer.create_membership_trends_by_type(sheet_name)
             if fig_trends:
@@ -642,7 +698,7 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Pie chart
     if options['pie']:
-        st.subheader("Membership Type Distribution")
+        st.subheader(f"{data_label} Type Distribution")
         try:
             fig_pie = analyzer.create_membership_type_pie_chart(sheet_name)
             if fig_pie:
@@ -654,7 +710,7 @@ def display_dashboard(analyzer, sheet_name, options):
     
     # Heatmap (full width)
     if options['heatmap']:
-        st.subheader("Membership Activity Heatmap")
+        st.subheader(f"{data_label} Activity Heatmap")
         try:
             fig_heatmap = analyzer.create_heatmap(sheet_name)
             if fig_heatmap:
@@ -701,7 +757,7 @@ def display_dashboard(analyzer, sheet_name, options):
         if st.button("Generate Report"):
             st.info("Report generation feature coming soon!")
 
-def display_comparison_dashboard(analyzer, options):
+def display_comparison_dashboard(analyzer, options, data_type='memberships'):
     """Display the multi-location comparison dashboard"""
     
     st.header("🏢 Multi-Location Comparison")
@@ -713,6 +769,10 @@ def display_comparison_dashboard(analyzer, options):
         st.error("No data available for comparison")
         return
     
+    # Dynamic labels based on data type
+    data_label = "Tests" if data_type == 'tests' else "Memberships"
+    total_col_name = f'Total_{data_label}'
+    
     # Summary metrics
     st.subheader("Overview")
     
@@ -723,12 +783,12 @@ def display_comparison_dashboard(analyzer, options):
         st.metric("Total Locations", total_locations)
     
     with col2:
-        total_memberships = comparison_df['Total_Memberships'].sum()
-        st.metric("Total Memberships", f"{total_memberships:,.0f}")
+        total_count = comparison_df[total_col_name].sum()
+        st.metric(f"Total {data_label}", f"{total_count:,.0f}")
     
     with col3:
-        best_location = comparison_df.loc[comparison_df['Total_Memberships'].idxmax(), 'Sheet_Name']
-        best_count = comparison_df['Total_Memberships'].max()
+        best_location = comparison_df.loc[comparison_df[total_col_name].idxmax(), 'Sheet_Name']
+        best_count = comparison_df[total_col_name].max()
         st.metric("Top Performer", best_location, f"{best_count:,.0f}")
     
     with col4:
@@ -765,14 +825,20 @@ def display_comparison_dashboard(analyzer, options):
         st.subheader("Detailed Statistics")
         
         # Format the display table
-        display_df = comparison_df[['Sheet_Name', 'Total_Memberships', 'Active_Membership_Types', 
+        if data_type == 'tests':
+            active_types_col = 'Active_Test_Types'
+        else:
+            active_types_col = 'Active_Membership_Types'
+        display_df = comparison_df[['Sheet_Name', total_col_name, active_types_col, 
                                   'Best_Month', 'Best_Month_Count', 'Avg_Monthly', 'Growth_Rate']].copy()
         
-        display_df.columns = ['Location & Year', 'Total Members', 'Active Types', 
+        type_label = "Test Types" if data_type == 'tests' else "Membership Types"
+        total_label = f'Total {data_label.split()[0]}s'  # "Total Tests" or "Total Members"
+        display_df.columns = ['Location & Year', total_label, f'Active {type_label}', 
                              'Best Month', 'Best Month Count', 'Avg Monthly', 'Growth Rate (%)']
         
         # Format numbers
-        display_df['Total Members'] = display_df['Total Members'].apply(lambda x: f"{x:,.0f}")
+        display_df[total_label] = display_df[total_label].apply(lambda x: f"{x:,.0f}")
         display_df['Best Month Count'] = display_df['Best Month Count'].apply(lambda x: f"{x:,.0f}")
         display_df['Avg Monthly'] = display_df['Avg Monthly'].apply(lambda x: f"{x:.1f}")
         display_df['Growth Rate (%)'] = display_df['Growth Rate (%)'].apply(lambda x: f"{x:.1f}%")
@@ -785,18 +851,19 @@ def display_comparison_dashboard(analyzer, options):
     insights = []
     
     # Best and worst performers
-    best_idx = comparison_df['Total_Memberships'].idxmax()
-    worst_idx = comparison_df['Total_Memberships'].idxmin()
+    best_idx = comparison_df[total_col_name].idxmax()
+    worst_idx = comparison_df[total_col_name].idxmin()
     
     best_location = comparison_df.loc[best_idx, 'Sheet_Name']
-    best_total = comparison_df.loc[best_idx, 'Total_Memberships']
+    best_total = comparison_df.loc[best_idx, total_col_name]
     worst_location = comparison_df.loc[worst_idx, 'Sheet_Name']
-    worst_total = comparison_df.loc[worst_idx, 'Total_Memberships']
+    worst_total = comparison_df.loc[worst_idx, total_col_name]
     
-    insights.append(f"**Best performing location:** {best_location} with {best_total:,.0f} total memberships")
+    data_label_lower = data_label.lower()
+    insights.append(f"**Best performing location:** {best_location} with {best_total:,.0f} total {data_label_lower}")
     
     if len(comparison_df) > 1:
-        insights.append(f"**Lowest performing location:** {worst_location} with {worst_total:,.0f} total memberships")
+        insights.append(f"**Lowest performing location:** {worst_location} with {worst_total:,.0f} total {data_label_lower}")
         
         # Performance gap
         performance_gap = ((best_total - worst_total) / worst_total) * 100
@@ -817,8 +884,8 @@ def display_comparison_dashboard(analyzer, options):
     locations_2025 = comparison_df[comparison_df['Year'] == '2025']
     
     if len(locations_2024) > 0 and len(locations_2025) > 0:
-        avg_2024 = locations_2024['Total_Memberships'].mean()
-        avg_2025 = locations_2025['Total_Memberships'].mean()
+        avg_2024 = locations_2024[total_col_name].mean()
+        avg_2025 = locations_2025[total_col_name].mean()
         yoy_change = ((avg_2025 - avg_2024) / avg_2024) * 100
         insights.append(f"**Year-over-year change:** {yoy_change:.1f}% change from 2024 to 2025 average")
     
@@ -837,7 +904,7 @@ def display_comparison_dashboard(analyzer, options):
         except Exception as e:
             st.error(f"Export error: {str(e)}")
 
-def display_two_location_comparison(analyzer, location_1, location_2, options, layout_options=None):
+def display_two_location_comparison(analyzer, location_1, location_2, options, layout_options=None, data_type='memberships'):
     """Display comparison of two locations with flexible layout options"""
     
     # Default layout options if not provided
