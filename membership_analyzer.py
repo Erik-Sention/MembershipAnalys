@@ -954,6 +954,105 @@ class MembershipAnalyzer:
         
         return fig
     
+    def create_overall_membership_distribution_pie_chart(self):
+        """
+        Create an overall pie chart showing distribution of membership/test types
+        across ALL locations and years combined
+        """
+        overall_data = {}
+        
+        for sheet_name, df in self.data.items():
+            try:
+                # Find data column based on data type
+                data_col_name = 'Test' if self.data_type == 'tests' else 'Membership'
+                data_col = None
+                
+                for col in df.columns:
+                    if data_col_name.lower() in str(col).lower() or str(col).strip() == data_col_name:
+                        data_col = col
+                        break
+                
+                if not data_col and len(df.columns) > 0:
+                    data_col = df.columns[0]
+                
+                # Get month columns for calculating totals
+                month_columns = []
+                for col in df.columns:
+                    try:
+                        col_str = str(col).lower()
+                        if any(month in col_str for month in 
+                              ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 
+                               'juli', 'augusti', 'september', 'oktober', 'november', 'december']):
+                            month_columns.append(col)
+                    except:
+                        continue
+                
+                if data_col and month_columns:
+                    for idx, row in df.iterrows():
+                        # Sum up monthly values for each type
+                        monthly_sum = 0
+                        for col in month_columns:
+                            value = pd.to_numeric(row[col], errors='coerce')
+                            if not pd.isna(value):
+                                monthly_sum += value
+                        
+                        if monthly_sum > 0:  # Only include types with actual data
+                            type_name = str(row[data_col]).strip()
+                            
+                            # Skip summary rows
+                            if any(skip_word in type_name.lower() for skip_word in 
+                                  ['summa', 'total', 'sum', 'totalt', 'totalsumma']):
+                                continue
+                            
+                            # Aggregate across all locations and years
+                            if type_name in overall_data:
+                                overall_data[type_name] += monthly_sum
+                            else:
+                                overall_data[type_name] = monthly_sum
+                            
+            except Exception as e:
+                print(f"Error processing {sheet_name} for overall distribution: {e}")
+                continue
+        
+        if not overall_data:
+            return None
+        
+        # Create DataFrame for pie chart
+        pie_data = pd.DataFrame({
+            'Type': list(overall_data.keys()),
+            'Total': list(overall_data.values())
+        })
+        
+        # Sort by total for better visual organization
+        pie_data = pie_data.sort_values('Total', ascending=False)
+        
+        # Create pie chart
+        data_label = "Tests" if self.data_type == 'tests' else "Memberships"
+        type_label = "Test Type" if self.data_type == 'tests' else "Membership Type"
+        
+        fig = px.pie(
+            pie_data, 
+            values='Total', 
+            names='Type',
+            title=f'Overall {type_label} Distribution - All Locations & Years',
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        
+        fig.update_traces(
+            textposition='inside', 
+            textinfo='percent+label',
+            hovertemplate='<b>%{label}</b><br>Count: %{value:,.0f}<br>Percentage: %{percent}<extra></extra>'
+        )
+        
+        fig.update_layout(
+            height=600,  # Slightly larger for better readability
+            showlegend=True,
+            margin=dict(t=80, b=80, l=20, r=20),
+            font=dict(size=12)
+        )
+        
+        return fig
+    
     def create_membership_trends_by_type(self, sheet_name=None):
         """
         Create a line chart showing monthly trends for each type separately
