@@ -611,6 +611,8 @@ def main():
                         show_growth_comparison = st.sidebar.checkbox("Growth Rate Comparison", True)
                         distribution_label = f"{data_type_label} Distribution Comparison" if data_type == 'tests' else "Membership Distribution Comparison"
                         show_distribution_comparison = st.sidebar.checkbox(distribution_label, True)
+                        overall_pie_label = f"Overall {data_type_label} Distribution (All Locations)" if data_type == 'tests' else "Overall Membership Distribution (All Locations)"
+                        show_overall_pie = st.sidebar.checkbox(overall_pie_label, True)
                         show_summary_table = st.sidebar.checkbox("Summary Statistics Table", True)
                         
                         # Display comparison dashboard
@@ -619,6 +621,7 @@ def main():
                             'monthly': show_monthly_comparison,
                             'growth': show_growth_comparison,
                             'distribution': show_distribution_comparison,
+                            'overall_pie': show_overall_pie,
                             'table': show_summary_table
                         }, data_type)
                 else:
@@ -813,12 +816,28 @@ def display_comparison_dashboard(analyzer, options, data_type='memberships'):
     
     # Membership distribution comparison
     if options['distribution']:
-        st.subheader("Membership Type Distribution Comparison")
+        data_label_title = "Test Type" if data_type == 'tests' else "Membership Type"
+        st.subheader(f"{data_label_title} Distribution Comparison")
         fig_distribution = analyzer.create_membership_distribution_comparison()
         if fig_distribution:
             st.plotly_chart(fig_distribution, use_container_width=True)
         else:
-            st.warning("Could not generate membership distribution comparison")
+            st.warning(f"Could not generate {data_label_title.lower()} distribution comparison")
+    
+    # Overall pie chart showing distribution across ALL locations and years
+    if options['overall_pie']:
+        data_label_title = "Test Type" if data_type == 'tests' else "Membership Type"
+        st.subheader(f"Overall {data_label_title} Distribution - All Locations & Years")
+        st.markdown("*This pie chart shows the percentage distribution of all membership types across all locations and years combined.*")
+        
+        try:
+            fig_overall_pie = analyzer.create_overall_membership_distribution_pie_chart()
+            if fig_overall_pie:
+                st.plotly_chart(fig_overall_pie, use_container_width=True)
+            else:
+                st.warning(f"Could not generate overall {data_label_title.lower()} distribution pie chart")
+        except Exception as e:
+            st.error(f"Error creating overall pie chart: {str(e)}")
     
     # Summary table
     if options['table']:
